@@ -108,22 +108,18 @@ class ImageAugmentation(object):
             count += 1
 
     def augmentation(self):
-        # cv2.imshow('image1', self.img)
-        # key = cv2.waitKey()
-        # if key == 27:
-        #     cv2.destroyAllWindows()
         # 图片旋转和缩放
-        # self.similarity_transform()
+        self.similarity_transform()
         # 图像仿射变换
-        # self.affine_transform()
+        self.affine_transform()
         # 改变图像的颜色
-        # self.chang_color()
+        self.chang_color()
         # 图像gamma校正
-        # self.gamma_correction(0.5)
+        self.gamma_correction(0.5)
         # 图像直方图均衡
-        # self.histogram_equalize()
+        self.histogram_equalize()
         # 图像翻转
-        # self.flip()
+        self.flip()
         # 图像随机剪裁
         self.random_crop()
 
