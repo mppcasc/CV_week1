@@ -1,0 +1,133 @@
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+import math
+import random
+
+
+class ImageAugmentation(object):
+    def __init__(self):
+        self.img = cv2.imread('/home/mpp/图片/image2.jpeg')
+        self.height, self.width, self.ch = self.img.shape
+
+    def similarity_transform(self):
+        '''简单变换，包括旋转、平移、缩放'''
+        point = (self.width/2, self.height/2)
+        angle = [i*30 for i in range(0, 12)]
+        scale = [0.5, 1, 1.5]
+        count = 0
+        for i in angle:
+            for j in scale:
+                height = int(self.width*math.fabs(math.sin(math.radians(i))) + self.height*math.fabs(math.cos(math.radians(i))) * j)
+                width = int(self.height*math.fabs(math.sin(math.radians(i))) + self.width*math.fabs(math.cos(math.radians(i))) * j)
+                Matrix = cv2.getRotationMatrix2D(point, i, j)
+                Matrix[0, 2] += (width - self.width) / 2 # 从原来图像的中心点，平移到新的图像大小（这个图像大小不是真是图像大小，而是能够包含图像的长方体的大小）的中心点
+                Matrix[1, 2] += (height - self.height) / 2
+
+                image_rotate = cv2.warpAffine(self.img, Matrix, (width, height), borderValue=(255,255,255))
+                cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_rotation{}.jpg'.format(count), image_rotate)
+                count += 1
+                
+    def deal_RGB(self, rgb):
+        '''随机处理像素值'''
+        rand = random.randint(-50, 50)
+        if rand == 0:
+            pass
+        elif rand > 0:
+            lim = 255 - rand
+            rgb[rgb > lim] = 255
+            rgb[rgb <= lim] = (rand + rgb[rgb <= lim]).astype(self.img.dtype)
+        else:
+            lim = 0 - rand
+            rgb[rgb < lim] = 0
+            rgb[rgb >= lim] = (rand + rgb[rgb >= lim]).astype(self.img.dtype)
+        return rgb
+        
+
+    def chang_color(self):
+        '''随机改变图片颜色'''
+        B, G, R = cv2.split(self.img)
+        for i in range(10):
+            B = self.deal_RGB(B)
+            R = self.deal_RGB(R)
+            G = self.deal_RGB(G)
+            image_merge = cv2.merge((B, G, R))
+            cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_change_color{}.jpg'.format(i), image_merge)
+
+    def gamma_correction(self, gamma):
+        '''gamma correction'''
+        invGamma = 1/gamma
+        table = []
+        for i in range(256):
+            table.append(255*((i/255.0)**invGamma))
+        table = np.array(table).astype('uint8')
+        img_gamma = cv2.LUT(self.img, table)
+        cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_gamma.jpg', img_gamma)
+
+    def histogram_equalize(self):
+        '''直方图均衡'''
+        img_yuv = cv2.cvtColor(self.img, cv2.COLOR_BGR2YUV)
+        img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+        img_qul = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+        cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_qualize.jpg', img_qul)
+        plt.subplot(1, 2, 1)
+        plt.title('before equalize')
+        plt.hist(self.img.flatten(), 256, [0, 255], color='b')
+        plt.subplot(1, 2, 2)
+        plt.title('after equalize')
+        plt.hist(img_qul.flatten(), 256, [0, 255], color='r')
+        plt.show()
+
+    def affine_transform(self):
+        pos1 = np.float32([[0, 0], [self.width-1, 0], [0, self.height-1]])
+        for i in range(10):
+
+            # pos2 = np.float32([[self.width*0.7, self.height*0.1], [self.width*0.9, self.height*0.2], [self.width*0.1, self.height*0.7]])
+            pos2 = np.float32([[self.width*random.random(), self.height*random.random()], [self.width*random.random(), self.height*random.random()], [self.width*random.random(), self.height*random.random()]])
+            Matrix = cv2.getAffineTransform(pos1, pos2)
+            img_affine = cv2.warpAffine(self.img, Matrix, (2*self.width, 2*self.height))
+            cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_affine{}.jpg'.format(i), img_affine)
+
+    def flip(self):
+        h_flip = cv2.flip(self.img, 0)
+        v_flip = cv2.flip(self.img, 1)
+        hv_flip = cv2.flip(self.img, -1)
+        cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_h_flip.jpg', h_flip)
+        cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_v_flip.jpg', v_flip)
+        cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_hv_flip.jpg', hv_flip)
+
+    def random_crop(self):
+        '''随机剪裁图像(206*244)'''
+        count = 0
+        while count <= 10:
+            begin = random.randint(0, 50)
+            col = random.randint(150, 206)
+            row = random.randint(200, 244)
+            img_crop = self.img[begin:col, begin: row, :]
+            cv2.imwrite('/home/mpp/人工智能/计算机视觉/课程代码/image/image_crop{}.jpg'.format(count), img_crop)
+            count += 1
+
+    def augmentation(self):
+        # cv2.imshow('image1', self.img)
+        # key = cv2.waitKey()
+        # if key == 27:
+        #     cv2.destroyAllWindows()
+        # 图片旋转和缩放
+        # self.similarity_transform()
+        # 图像仿射变换
+        # self.affine_transform()
+        # 改变图像的颜色
+        # self.chang_color()
+        # 图像gamma校正
+        # self.gamma_correction(0.5)
+        # 图像直方图均衡
+        # self.histogram_equalize()
+        # 图像翻转
+        # self.flip()
+        # 图像随机剪裁
+        self.random_crop()
+
+
+if __name__ == '__main__':
+    image_aug = ImageAugmentation()
+    image_aug.augmentation()
